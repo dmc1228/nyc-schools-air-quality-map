@@ -466,12 +466,11 @@
 
         <h4 style="font-size: 12px; margin: 15px 0 8px; color: #555;">AQI Scale (Live Monitors)</h4>
         <div class="aq-legend">
-            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #00e400;"></div>Good</div>
-            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #ffff00;"></div>Moderate</div>
-            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #ff7e00;"></div>Sensitive</div>
-            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #ff0000;"></div>Unhealthy</div>
-            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #8f3f97;"></div>Very Unhlthy</div>
-            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #7e0023;"></div>Hazardous</div>
+            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #00e400;"></div>Great (&lt;10)</div>
+            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #7dd87d;"></div>Good (10-25)</div>
+            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #ffff00;"></div>OK (25-75)</div>
+            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #ff7e00;"></div>Bad (75-200)</div>
+            <div class="aq-legend-item"><div class="aq-legend-color" style="background: #cc0033;"></div>Hazardous (&gt;200)</div>
         </div>
 
         <div class="data-sources">
@@ -606,22 +605,20 @@
         // Store markers for filtering
         let schoolMarkers = [];
 
-        // AQI color function
+        // AQI color function (custom scale)
         function getAQIColor(aqi) {
-            if (aqi <= 50) return '#00e400';      // Good
-            if (aqi <= 100) return '#ffff00';     // Moderate
-            if (aqi <= 150) return '#ff7e00';     // Unhealthy for Sensitive
-            if (aqi <= 200) return '#ff0000';     // Unhealthy
-            if (aqi <= 300) return '#8f3f97';     // Very Unhealthy
-            return '#7e0023';                      // Hazardous
+            if (aqi < 10) return '#00e400';       // Great - bright green
+            if (aqi <= 25) return '#7dd87d';      // Good - light green
+            if (aqi <= 75) return '#ffff00';      // OK - yellow
+            if (aqi <= 200) return '#ff7e00';     // Bad - orange
+            return '#cc0033';                      // Hazardous - red
         }
 
         function getAQILabel(aqi) {
-            if (aqi <= 50) return 'Good';
-            if (aqi <= 100) return 'Moderate';
-            if (aqi <= 150) return 'Unhealthy for Sensitive Groups';
-            if (aqi <= 200) return 'Unhealthy';
-            if (aqi <= 300) return 'Very Unhealthy';
+            if (aqi < 10) return 'Great';
+            if (aqi <= 25) return 'Good';
+            if (aqi <= 75) return 'OK';
+            if (aqi <= 200) return 'Bad';
             return 'Hazardous';
         }
 
@@ -750,13 +747,14 @@
 
         // Historical AQI data - pre-computed NYC yearly averages
         // (Using cached data since real-time historical fetches are slow)
+        // Custom scale: Great (<10), Good (10-25), OK (25-75), Bad (75-200), Hazardous (>200)
         const historicalAQI = {
-            '2020': { avg: 42, label: 'Good', color: '#00e400' },
-            '2021': { avg: 45, label: 'Good', color: '#00e400' },
-            '2022': { avg: 48, label: 'Good', color: '#00e400' },
-            '2023': { avg: 52, label: 'Moderate', color: '#ffff00' },
-            '2024': { avg: 47, label: 'Good', color: '#00e400' },
-            '2025': { avg: 44, label: 'Good', color: '#00e400' }
+            '2020': { avg: 42, label: 'OK', color: '#ffff00' },
+            '2021': { avg: 45, label: 'OK', color: '#ffff00' },
+            '2022': { avg: 48, label: 'OK', color: '#ffff00' },
+            '2023': { avg: 52, label: 'OK', color: '#ffff00' },
+            '2024': { avg: 47, label: 'OK', color: '#ffff00' },
+            '2025': { avg: 44, label: 'OK', color: '#ffff00' }
         };
 
         function createSparkline(stationName) {
