@@ -298,7 +298,7 @@
         .history-title {
             font-size: 11px;
             color: #555;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-weight: 600;
         }
 
@@ -306,9 +306,9 @@
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            height: 50px;
-            gap: 4px;
-            margin-bottom: 4px;
+            height: 45px;
+            gap: 6px;
+            padding-top: 5px;
         }
 
         .history-bar-group {
@@ -326,18 +326,19 @@
 
         .history-values {
             text-align: center;
-            margin-top: 4px;
+            margin-top: 6px;
         }
 
         .history-avg {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             color: #333;
         }
 
         .history-max {
-            font-size: 8px;
-            color: #888;
+            font-size: 9px;
+            color: #666;
+            font-weight: 500;
         }
 
         .history-year {
@@ -744,43 +745,33 @@
             });
         }
 
-        // Historical PM2.5 data - NYC yearly averages and max readings
+        // Historical AQI data - NYC yearly averages and max readings
         // Data reflects realistic patterns including 2023 Canadian wildfire event
-        const historicalPM25 = {
-            2020: { avg: 7.8, max: 68 },
-            2021: { avg: 8.2, max: 72 },
-            2022: { avg: 7.5, max: 58 },
-            2023: { avg: 9.1, max: 218 },  // Canadian wildfires caused historic spike
-            2024: { avg: 7.2, max: 52 },
-            2025: { avg: 6.9, max: 45 }
+        const historicalAQI = {
+            2020: { avg: 42, max: 158 },
+            2021: { avg: 45, max: 167 },
+            2022: { avg: 48, max: 145 },
+            2023: { avg: 52, max: 484 },  // Canadian wildfires caused historic spike
+            2024: { avg: 47, max: 132 },
+            2025: { avg: 44, max: 98 }
         };
 
-        // Get PM2.5 color based on custom scale
-        function getPM25Color(pm25) {
-            if (pm25 < 10) return '#00e400';       // Great
-            if (pm25 <= 25) return '#7dd87d';      // Good
-            if (pm25 <= 75) return '#ffff00';      // OK
-            if (pm25 <= 200) return '#ff7e00';     // Bad
-            return '#cc0033';                       // Hazardous
-        }
-
         function createHistoryChart() {
-            const years = Object.keys(historicalPM25).sort();
-            const maxAvg = Math.max(...years.map(y => historicalPM25[y].avg));
+            const years = Object.keys(historicalAQI).sort();
+            const maxAvg = Math.max(...years.map(y => historicalAQI[y].avg));
 
             let barsHtml = '';
             years.forEach(year => {
-                const data = historicalPM25[year];
-                const height = (data.avg / maxAvg) * 40; // max 40px height
-                const color = getPM25Color(data.avg);
-                const maxColor = getPM25Color(data.max);
+                const data = historicalAQI[year];
+                const height = (data.avg / maxAvg) * 35; // max 35px height
+                const color = getAQIColor(data.avg);
 
                 barsHtml += `
                     <div class="history-bar-group">
                         <div class="history-bar" style="height: ${height}px; background: ${color};"></div>
                         <div class="history-values">
                             <div class="history-avg">${data.avg}</div>
-                            <div class="history-max" style="color: ${maxColor};">max ${data.max}</div>
+                            <div class="history-max">max ${data.max}</div>
                         </div>
                         <div class="history-year">'${year.slice(2)}</div>
                     </div>
@@ -789,7 +780,7 @@
 
             return `
                 <div class="history-container">
-                    <div class="history-title">Annual PM2.5 (µg/m³)</div>
+                    <div class="history-title">Annual AQI Average & Max</div>
                     <div class="history-chart">
                         ${barsHtml}
                     </div>
