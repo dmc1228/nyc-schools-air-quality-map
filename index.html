@@ -288,63 +288,71 @@
             border-top: 1px solid #eee;
         }
 
-        .sparkline-container {
+        .calendar-container {
             margin-top: 10px;
-            padding: 8px;
+            padding: 10px;
             background: #f8f9fa;
             border-radius: 5px;
         }
 
-        .sparkline-title {
+        .calendar-title {
             font-size: 11px;
             color: #555;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: 600;
         }
 
-        .sparkline-chart {
+        .calendar-year {
             display: flex;
-            align-items: flex-end;
-            gap: 3px;
-            height: 40px;
+            align-items: center;
+            margin-bottom: 4px;
+            gap: 4px;
         }
 
-        .sparkline-bar {
-            flex: 1;
-            border-radius: 2px 2px 0 0;
-            min-width: 20px;
-            position: relative;
-            transition: opacity 0.2s;
-        }
-
-        .sparkline-bar:hover {
-            opacity: 0.8;
-        }
-
-        .sparkline-bar-label {
-            position: absolute;
-            bottom: -16px;
-            left: 50%;
-            transform: translateX(-50%);
+        .calendar-year-label {
             font-size: 9px;
             color: #666;
+            width: 28px;
+            text-align: right;
         }
 
-        .sparkline-bar-value {
-            position: absolute;
-            top: -14px;
-            left: 50%;
-            transform: translateX(-50%);
+        .calendar-days {
+            display: flex;
+            gap: 1px;
+            flex-wrap: nowrap;
+        }
+
+        .calendar-day {
+            width: 3px;
+            height: 10px;
+            border-radius: 1px;
+        }
+
+        .calendar-max {
             font-size: 9px;
-            font-weight: bold;
-            color: #333;
+            color: #555;
+            margin-left: 4px;
+            white-space: nowrap;
         }
 
-        .sparkline-loading {
-            text-align: center;
-            padding: 10px;
+        .calendar-legend {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 8px;
             color: #888;
-            font-size: 11px;
+        }
+
+        .calendar-legend-scale {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .calendar-legend-box {
+            width: 8px;
+            height: 8px;
+            border-radius: 1px;
         }
     </style>
 </head>
@@ -745,39 +753,100 @@
             });
         }
 
-        // Historical AQI data - pre-computed NYC yearly averages
-        // (Using cached data since real-time historical fetches are slow)
-        // Custom scale: Great (<10), Good (10-25), OK (25-75), Bad (75-200), Hazardous (>200)
-        const historicalAQI = {
-            '2020': { avg: 42, label: 'OK', color: '#ffff00' },
-            '2021': { avg: 45, label: 'OK', color: '#ffff00' },
-            '2022': { avg: 48, label: 'OK', color: '#ffff00' },
-            '2023': { avg: 52, label: 'OK', color: '#ffff00' },
-            '2024': { avg: 47, label: 'OK', color: '#ffff00' },
-            '2025': { avg: 44, label: 'OK', color: '#ffff00' }
-        };
+        // Historical PM2.5 daily data - simulated realistic NYC patterns
+        // Includes seasonal variation, occasional spikes, and notable events (e.g., 2023 Canadian wildfires)
+        function generateYearData(year) {
+            const days = [];
+            const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+            const numDays = isLeapYear ? 366 : 365;
 
-        function createSparkline(stationName) {
-            const years = Object.keys(historicalAQI).sort();
-            const maxAqi = Math.max(...years.map(y => historicalAQI[y].avg));
+            // Base patterns: higher in summer (ozone), occasional winter inversions
+            for (let d = 0; d < numDays; d++) {
+                const month = Math.floor(d / 30.44); // approximate month
 
-            let barsHtml = '';
+                // Seasonal base: summer higher (June-Aug = months 5-7)
+                let base = 8 + Math.sin((d / numDays) * Math.PI) * 6;
+
+                // Random daily variation
+                let daily = base + (Math.random() - 0.3) * 12;
+
+                // Occasional spikes (about 5% of days)
+                if (Math.random() < 0.05) {
+                    daily += Math.random() * 40;
+                }
+
+                // 2023 Canadian wildfire event (early June - simulate major spike)
+                if (year === 2023 && d >= 155 && d <= 165) {
+                    daily = 150 + Math.random() * 100; // June 7-8 peaked at 200+
+                }
+
+                days.push(Math.max(1, Math.round(daily)));
+            }
+            return days;
+        }
+
+        // Pre-generate data for each year
+        const historicalPM25 = {};
+        [2020, 2021, 2022, 2023, 2024, 2025].forEach(year => {
+            // Use seeded-like approach for consistency (based on year)
+            const seed = year * 1000;
+            const origRandom = Math.random;
+            let seedVal = seed;
+            Math.random = () => { seedVal = (seedVal * 9301 + 49297) % 233280; return seedVal / 233280; };
+            historicalPM25[year] = generateYearData(year);
+            Math.random = origRandom;
+        });
+
+        // Get PM2.5 color based on custom scale
+        function getPM25Color(pm25) {
+            if (pm25 < 10) return '#00e400';       // Great
+            if (pm25 <= 25) return '#7dd87d';      // Good
+            if (pm25 <= 75) return '#ffff00';      // OK
+            if (pm25 <= 200) return '#ff7e00';     // Bad
+            return '#cc0033';                       // Hazardous
+        }
+
+        function createCalendarHeatmap() {
+            const years = [2020, 2021, 2022, 2023, 2024, 2025];
+            let yearsHtml = '';
+
             years.forEach(year => {
-                const data = historicalAQI[year];
-                const height = (data.avg / maxAqi) * 35; // max 35px height
-                barsHtml += `
-                    <div class="sparkline-bar" style="height: ${height}px; background: ${data.color};">
-                        <span class="sparkline-bar-value">${data.avg}</span>
-                        <span class="sparkline-bar-label">'${year.slice(2)}</span>
+                const days = historicalPM25[year];
+                const maxPM25 = Math.max(...days);
+                const daysToShow = Math.min(days.length, 52 * 7); // ~1 year in weeks
+
+                // Sample days to fit in popup (show ~104 boxes = 2 per week)
+                let daysHtml = '';
+                const step = Math.ceil(days.length / 104);
+                for (let i = 0; i < days.length; i += step) {
+                    const pm25 = days[i];
+                    const color = getPM25Color(pm25);
+                    daysHtml += `<div class="calendar-day" style="background: ${color};" title="${pm25} µg/m³"></div>`;
+                }
+
+                yearsHtml += `
+                    <div class="calendar-year">
+                        <span class="calendar-year-label">${year}</span>
+                        <div class="calendar-days">${daysHtml}</div>
+                        <span class="calendar-max">max: ${maxPM25}</span>
                     </div>
                 `;
             });
 
             return `
-                <div class="sparkline-container">
-                    <div class="sparkline-title">NYC Annual AQI Trend</div>
-                    <div class="sparkline-chart" style="margin-bottom: 18px;">
-                        ${barsHtml}
+                <div class="calendar-container">
+                    <div class="calendar-title">Daily PM2.5 History (µg/m³)</div>
+                    ${yearsHtml}
+                    <div class="calendar-legend">
+                        <span>Jan → Dec</span>
+                        <div class="calendar-legend-scale">
+                            <div class="calendar-legend-box" style="background: #00e400;"></div>
+                            <div class="calendar-legend-box" style="background: #7dd87d;"></div>
+                            <div class="calendar-legend-box" style="background: #ffff00;"></div>
+                            <div class="calendar-legend-box" style="background: #ff7e00;"></div>
+                            <div class="calendar-legend-box" style="background: #cc0033;"></div>
+                            <span>Low → High</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -809,7 +878,7 @@
                         const aqiLabel = getAQILabel(aqi);
                         const aqiColor = getAQIColor(aqi);
 
-                        const sparklineHtml = createSparkline(station.station.name);
+                        const calendarHtml = createCalendarHeatmap();
                         marker.bindPopup(`
                             <h3>${station.station.name}</h3>
                             <div class="popup-row">
@@ -819,11 +888,11 @@
                                 </span>
                             </div>
                             <div class="popup-row"><span class="popup-label">Updated:</span> ${station.station.time}</div>
-                            ${sparklineHtml}
+                            ${calendarHtml}
                             <div class="popup-row" style="margin-top: 8px; font-size: 11px; color: #666;">
-                                Data from AQICN.org
+                                Data from AQICN.org | Historical data simulated
                             </div>
-                        `);
+                        `, { maxWidth: 400 });
 
                         aqLayer.addLayer(marker);
                         totalAqi += aqi;
