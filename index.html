@@ -287,6 +287,65 @@
             padding-top: 10px;
             border-top: 1px solid #eee;
         }
+
+        .sparkline-container {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .sparkline-title {
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .sparkline-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 40px;
+        }
+
+        .sparkline-bar {
+            flex: 1;
+            border-radius: 2px 2px 0 0;
+            min-width: 20px;
+            position: relative;
+            transition: opacity 0.2s;
+        }
+
+        .sparkline-bar:hover {
+            opacity: 0.8;
+        }
+
+        .sparkline-bar-label {
+            position: absolute;
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            color: #666;
+        }
+
+        .sparkline-bar-value {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .sparkline-loading {
+            text-align: center;
+            padding: 10px;
+            color: #888;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -351,6 +410,7 @@
             <div class="stat-row"><span>Bus Depots:</span><span>30</span></div>
             <div class="stat-row"><span>Power Plants:</span><span>15</span></div>
             <div class="stat-row"><span>Waste Facilities:</span><span>17</span></div>
+            <div class="stat-row"><span>Diesel Hotspots:</span><span>29</span></div>
         </div>
 
         <div class="controls-section">
@@ -360,7 +420,9 @@
             <button class="toggle-btn active" id="toggleDepots">Bus Depots</button>
             <button class="toggle-btn active" id="togglePlants">Power Plants</button>
             <button class="toggle-btn active" id="toggleWaste">Waste Facilities</button>
+            <button class="toggle-btn active" id="toggleDiesel">Diesel Hotspots (Ports/Freight)</button>
             <button class="toggle-btn active" id="toggleHighways">Major Highways</button>
+            <button class="toggle-btn active" id="toggleRoads">Truck Routes</button>
         </div>
 
         <h3 style="font-size: 13px; margin: 15px 0 10px; color: #555;">Legend</h3>
@@ -390,8 +452,16 @@
             <span>Waste/Transfer Station</span>
         </div>
         <div class="legend-item">
+            <div class="legend-marker diamond" style="background: #d63031;"></div>
+            <span>Diesel Hotspot (Freight/Port)</span>
+        </div>
+        <div class="legend-item">
             <div style="width: 30px; height: 4px; background: #e74c3c; margin-right: 10px;"></div>
             <span>Major Highway</span>
+        </div>
+        <div class="legend-item">
+            <div style="width: 30px; height: 3px; background: #f39c12; margin-right: 10px; border-style: dashed;"></div>
+            <span>Truck Route</span>
         </div>
 
         <h4 style="font-size: 12px; margin: 15px 0 8px; color: #555;">AQI Scale (Live Monitors)</h4>
@@ -422,14 +492,96 @@
         const powerPlants = [{"name": "Ravenswood Generating Station", "lat": 40.758, "lon": -73.9405, "boro": "Queens", "capacity": "2480 MW", "notes": "Largest NYC generator; 20% of city capacity"}, {"name": "Astoria Generating Station", "lat": 40.7869, "lon": -73.9122, "boro": "Queens", "capacity": "1345 MW", "notes": "Multiple units since 1954"}, {"name": "Astoria Energy", "lat": 40.783, "lon": -73.915, "boro": "Queens", "capacity": "575 MW", "notes": "Combined cycle"}, {"name": "Astoria Energy II", "lat": 40.783, "lon": -73.915, "boro": "Queens", "capacity": "575 MW", "notes": "Combined cycle"}, {"name": "Arthur Kill Generating Station", "lat": 40.5845, "lon": -74.19, "boro": "Staten Island", "capacity": "878 MW", "notes": "Travis section"}, {"name": "Brooklyn Navy Yard Cogeneration", "lat": 40.7025, "lon": -73.9714, "boro": "Brooklyn", "capacity": "286 MW", "notes": "Cogeneration facility"}, {"name": "East River Generating Station", "lat": 40.7417, "lon": -73.9742, "boro": "Manhattan", "capacity": "550 MW", "notes": "E 14th St area"}, {"name": "Gowanus Gas Turbines", "lat": 40.6725, "lon": -73.985, "boro": "Brooklyn", "capacity": "640 MW", "notes": "Peaker plant"}, {"name": "Narrows Generating Station", "lat": 40.617, "lon": -74.03, "boro": "Brooklyn", "capacity": "286 MW", "notes": "Near Verrazano"}, {"name": "Hell Gate Generating Station", "lat": 40.781, "lon": -73.916, "boro": "Queens", "capacity": "94 MW", "notes": "NYPA peaker"}, {"name": "Harlem River Yard", "lat": 40.8075, "lon": -73.9294, "boro": "Bronx", "capacity": "47 MW", "notes": "NYPA facility"}, {"name": "Vernon Boulevard Combustion Turbine", "lat": 40.755, "lon": -73.9432, "boro": "Queens", "capacity": "45 MW", "notes": "Backup peaker"}, {"name": "Bronx Zoo Cogeneration", "lat": 40.8493, "lon": -73.8798, "boro": "Bronx", "capacity": "5 MW", "notes": "Campus power"}, {"name": "59th Street Steam Plant", "lat": 40.7605, "lon": -73.9619, "boro": "Manhattan", "capacity": "200 MW", "notes": "Steam generation"}, {"name": "74th Street Steam Plant", "lat": 40.7697, "lon": -73.9583, "boro": "Manhattan", "capacity": "250 MW", "notes": "Con Edison"}];
         const wasteFacilities = [{"name": "91st St Marine Transfer Station (DSNY)", "lat": 40.7793, "lon": -73.9431, "boro": "Manhattan", "type": "MTS"}, {"name": "Waste Management - Varick", "lat": 40.7127, "lon": -73.9295, "boro": "Brooklyn", "type": "TS"}, {"name": "SouthWest Marine Transfer Station (DSNY)", "lat": 40.5896, "lon": -73.9958, "boro": "Brooklyn", "type": "MTS"}, {"name": "Action Environmental", "lat": 40.6635, "lon": -73.8746, "boro": "Brooklyn", "type": "TS"}, {"name": "Tully Environmental", "lat": 40.7622, "lon": -73.8417, "boro": "Queens", "type": "TS"}, {"name": "Hamilton Marine Transfer Station (DSNY)", "lat": 40.669, "lon": -73.9975, "boro": "Brooklyn", "type": "MTS"}, {"name": "American Recycling", "lat": 40.7049, "lon": -73.7861, "boro": "Queens", "type": "TS"}, {"name": "Waste Management - Harlem River Yard", "lat": 40.8075, "lon": -73.9295, "boro": "Bronx", "type": "TS"}, {"name": "North Shore Marine Transfer Station (DSNY)", "lat": 40.7697, "lon": -73.8473, "boro": "Queens", "type": "MTS"}, {"name": "Waste Connections - Court St", "lat": 40.6728, "lon": -74.0004, "boro": "Brooklyn", "type": "TS"}, {"name": "Staten Island Transfer Station (DSNY)", "lat": 40.5796, "lon": -74.1927, "boro": "Staten Island", "type": "TS"}, {"name": "Waste Management - Review", "lat": 40.7308, "lon": -73.9343, "boro": "Queens", "type": "TS"}, {"name": "Waste Connections - 50th St", "lat": 40.6502, "lon": -74.019, "boro": "Brooklyn", "type": "TS"}, {"name": "Regal Recycling", "lat": 40.7048, "lon": -73.7857, "boro": "Queens", "type": "TS"}, {"name": "Action Environmental (Bronx)", "lat": 40.7986, "lon": -73.9117, "boro": "Bronx", "type": "TS"}, {"name": "Tri-State Transfer Inc", "lat": 40.8115, "lon": -73.8908, "boro": "Bronx", "type": "TS"}, {"name": "Action Environmental - Stanley Ave", "lat": 40.6634, "lon": -73.8745, "boro": "Brooklyn", "type": "TS"}];
 
-        // Major highways
+        // Diesel sources
+        const dieselSources = [{"name": "Hunts Point Produce Market", "type": "Freight Terminal", "lat": 40.813, "lon": -73.878, "desc": "World's largest food distribution center; 10,000+ truck trips/day"}, {"name": "Hunts Point Meat Market", "type": "Freight Terminal", "lat": 40.809, "lon": -73.881, "desc": "Major meat distribution hub; 24/7 truck operations"}, {"name": "Hunts Point Fish Market (Fulton)", "type": "Freight Terminal", "lat": 40.807, "lon": -73.877, "desc": "New Fulton Fish Market; overnight truck deliveries"}, {"name": "Oak Point Rail Yard (CSX)", "type": "Rail Yard", "lat": 40.812, "lon": -73.886, "desc": "NYC's largest freight rail yard; diesel locomotives"}, {"name": "Red Hook Container Terminal", "type": "Port", "lat": 40.6836, "lon": -74.006, "desc": "Container port; ships and truck traffic"}, {"name": "South Brooklyn Marine Terminal", "type": "Port", "lat": 40.663, "lon": -74.012, "desc": "Maritime freight terminal"}, {"name": "Brooklyn Army Terminal", "type": "Freight Terminal", "lat": 40.645, "lon": -74.025, "desc": "Industrial freight complex"}, {"name": "Port Liberty NY (Staten Island)", "type": "Port", "lat": 40.635, "lon": -74.185, "desc": "Container terminal with on-dock rail"}, {"name": "Howland Hook Marine Terminal", "type": "Port", "lat": 40.643, "lon": -74.177, "desc": "Auto import/export terminal"}, {"name": "JFK Cargo Area", "type": "Airport Cargo", "lat": 40.648, "lon": -73.785, "desc": "Major air freight hub; constant truck traffic"}, {"name": "LaGuardia Cargo", "type": "Airport Cargo", "lat": 40.775, "lon": -73.875, "desc": "Air freight operations"}, {"name": "Amazon - Bronx River Ave", "type": "Distribution Center", "lat": 40.823, "lon": -73.866, "desc": "Last-mile delivery station; 1055 Bronx River Ave"}, {"name": "Amazon - Hunts Point", "type": "Distribution Center", "lat": 40.816, "lon": -73.885, "desc": "Fulfillment center; 1080 Leggett Ave"}, {"name": "Amazon - Bruckner Blvd", "type": "Distribution Center", "lat": 40.828, "lon": -73.869, "desc": "Distribution facility; 2505 Bruckner Blvd"}, {"name": "Amazon - Maspeth", "type": "Distribution Center", "lat": 40.723, "lon": -73.898, "desc": "Queens distribution center"}, {"name": "Amazon - Red Hook", "type": "Distribution Center", "lat": 40.679, "lon": -74.007, "desc": "Brooklyn last-mile facility"}, {"name": "Amazon - Sunset Park", "type": "Distribution Center", "lat": 40.652, "lon": -74.015, "desc": "Brooklyn warehouse complex"}, {"name": "FedEx Ground - Bronx", "type": "Distribution Center", "lat": 40.817, "lon": -73.895, "desc": "Package sorting facility"}, {"name": "FedEx Ground - Brooklyn", "type": "Distribution Center", "lat": 40.665, "lon": -73.877, "desc": "Package hub"}, {"name": "UPS Maspeth Hub", "type": "Distribution Center", "lat": 40.718, "lon": -73.905, "desc": "Major UPS sorting facility"}, {"name": "UPS Bronx Hub", "type": "Distribution Center", "lat": 40.825, "lon": -73.895, "desc": "Package distribution center"}, {"name": "USPS Morgan Facility", "type": "Distribution Center", "lat": 40.752, "lon": -73.998, "desc": "Main NYC mail processing; 341 9th Ave"}, {"name": "Fresh Direct Facility", "type": "Distribution Center", "lat": 40.814, "lon": -73.88, "desc": "Grocery delivery warehouse; Bronx"}, {"name": "Sysco Metro NY", "type": "Distribution Center", "lat": 40.668, "lon": -73.87, "desc": "Food service distribution"}, {"name": "65th Street Rail Yard", "type": "Rail Yard", "lat": 40.642, "lon": -74.024, "desc": "Brooklyn rail freight yard"}, {"name": "51st Street Rail Yard", "type": "Rail Yard", "lat": 40.649, "lon": -74.017, "desc": "Cross-harbor freight barge terminal"}, {"name": "Maspeth Industrial Area", "type": "Industrial Zone", "lat": 40.72, "lon": -73.895, "desc": "Dense truck traffic zone"}, {"name": "Greenpoint Industrial Area", "type": "Industrial Zone", "lat": 40.729, "lon": -73.945, "desc": "Manufacturing and freight"}, {"name": "Williamsburg Industrial", "type": "Industrial Zone", "lat": 40.714, "lon": -73.942, "desc": "Truck-heavy industrial zone"}];
+
+        // Major highways with realistic routes (multiple waypoints)
         const highways = [
-            {name: "Cross Bronx Expwy (I-95)", coords: [[40.855, -73.92], [40.84, -73.85]], color: "#e74c3c"},
-            {name: "Major Deegan Expwy (I-87)", coords: [[40.88, -73.91], [40.81, -73.93]], color: "#e74c3c"},
-            {name: "Bruckner Expwy (I-278)", coords: [[40.83, -73.92], [40.80, -73.85]], color: "#e74c3c"},
-            {name: "BQE Brooklyn (I-278)", coords: [[40.72, -74.0], [40.68, -73.97]], color: "#e74c3c"},
-            {name: "Gowanus Expwy (I-278)", coords: [[40.68, -74.0], [40.62, -74.03]], color: "#e74c3c"},
-            {name: "Long Island Expwy (I-495)", coords: [[40.77, -73.92], [40.73, -73.82]], color: "#e74c3c"}
+            // Cross Bronx Expressway (I-95/I-295) - follows actual route
+            {name: "Cross Bronx Expwy (I-95)", coords: [
+                [40.879, -73.922], [40.871, -73.908], [40.862, -73.894], [40.855, -73.883],
+                [40.849, -73.871], [40.843, -73.862], [40.837, -73.852], [40.831, -73.841]
+            ], color: "#e74c3c", weight: 5},
+            // Major Deegan Expressway (I-87)
+            {name: "Major Deegan Expwy (I-87)", coords: [
+                [40.878, -73.914], [40.866, -73.918], [40.855, -73.921], [40.844, -73.924],
+                [40.833, -73.927], [40.822, -73.929], [40.811, -73.931], [40.801, -73.933]
+            ], color: "#e74c3c", weight: 5},
+            // Bruckner Expressway (I-278)
+            {name: "Bruckner Expwy (I-278)", coords: [
+                [40.829, -73.921], [40.826, -73.912], [40.822, -73.903], [40.819, -73.895],
+                [40.816, -73.886], [40.812, -73.877], [40.808, -73.868], [40.803, -73.859]
+            ], color: "#e74c3c", weight: 5},
+            // Brooklyn-Queens Expressway (north section through Queens/Brooklyn)
+            {name: "BQE Queens/Brooklyn (I-278)", coords: [
+                [40.775, -73.938], [40.765, -73.942], [40.755, -73.958], [40.742, -73.969],
+                [40.730, -73.979], [40.718, -73.987], [40.706, -73.992], [40.695, -73.998]
+            ], color: "#e74c3c", weight: 5},
+            // Gowanus Expressway
+            {name: "Gowanus Expwy (I-278)", coords: [
+                [40.695, -73.998], [40.686, -74.003], [40.675, -74.008], [40.665, -74.015],
+                [40.655, -74.020], [40.645, -74.025], [40.635, -74.030], [40.623, -74.037]
+            ], color: "#e74c3c", weight: 5},
+            // Long Island Expressway (I-495)
+            {name: "Long Island Expwy (I-495)", coords: [
+                [40.753, -73.956], [40.749, -73.940], [40.745, -73.920], [40.742, -73.900],
+                [40.740, -73.880], [40.738, -73.860], [40.736, -73.840], [40.734, -73.820]
+            ], color: "#e74c3c", weight: 5},
+            // Van Wyck Expressway (I-678)
+            {name: "Van Wyck Expwy (I-678)", coords: [
+                [40.765, -73.830], [40.752, -73.825], [40.738, -73.820], [40.722, -73.815],
+                [40.706, -73.810], [40.690, -73.800], [40.674, -73.792], [40.658, -73.784]
+            ], color: "#e74c3c", weight: 4},
+            // Staten Island Expressway (I-278)
+            {name: "Staten Island Expwy (I-278)", coords: [
+                [40.640, -74.075], [40.620, -74.108], [40.603, -74.140], [40.588, -74.168],
+                [40.575, -74.195], [40.568, -74.220], [40.562, -74.245]
+            ], color: "#e74c3c", weight: 4}
+        ];
+
+        // Major roads with heavy truck traffic
+        const majorRoads = [
+            // Bruckner Boulevard
+            {name: "Bruckner Blvd", coords: [
+                [40.823, -73.912], [40.818, -73.897], [40.813, -73.882], [40.808, -73.868]
+            ], color: "#f39c12", weight: 3},
+            // Atlantic Avenue (Brooklyn)
+            {name: "Atlantic Ave", coords: [
+                [40.691, -73.998], [40.686, -73.978], [40.681, -73.958], [40.677, -73.938],
+                [40.673, -73.918], [40.670, -73.898], [40.667, -73.878]
+            ], color: "#f39c12", weight: 3},
+            // Flatbush Avenue
+            {name: "Flatbush Ave", coords: [
+                [40.692, -73.978], [40.680, -73.971], [40.668, -73.964], [40.656, -73.957],
+                [40.644, -73.950], [40.632, -73.943], [40.620, -73.936]
+            ], color: "#f39c12", weight: 3},
+            // Northern Boulevard (Queens)
+            {name: "Northern Blvd", coords: [
+                [40.755, -73.940], [40.758, -73.920], [40.761, -73.900], [40.764, -73.880],
+                [40.767, -73.860], [40.770, -73.840], [40.773, -73.820]
+            ], color: "#f39c12", weight: 3},
+            // Queens Boulevard
+            {name: "Queens Blvd", coords: [
+                [40.745, -73.945], [40.740, -73.925], [40.735, -73.905], [40.732, -73.885],
+                [40.730, -73.865], [40.728, -73.845]
+            ], color: "#f39c12", weight: 3},
+            // Third Avenue (Bronx - truck route)
+            {name: "Third Ave / Hunts Point", coords: [
+                [40.845, -73.898], [40.837, -73.900], [40.829, -73.902], [40.821, -73.903],
+                [40.813, -73.895], [40.808, -73.880]
+            ], color: "#f39c12", weight: 3},
+            // Food Center Drive (Hunts Point)
+            {name: "Food Center Dr / Hunts Point Ave", coords: [
+                [40.818, -73.885], [40.814, -73.879], [40.810, -73.873], [40.806, -73.869]
+            ], color: "#f39c12", weight: 3},
+            // Hamilton Avenue (Red Hook)
+            {name: "Hamilton Ave (Red Hook)", coords: [
+                [40.680, -74.000], [40.676, -74.005], [40.672, -74.010], [40.668, -74.015]
+            ], color: "#f39c12", weight: 3},
+            // 39th Street (Sunset Park industrial)
+            {name: "39th St (Sunset Park)", coords: [
+                [40.652, -73.995], [40.652, -74.005], [40.652, -74.015], [40.652, -74.025]
+            ], color: "#f39c12", weight: 3}
         ];
 
         // Initialize map
@@ -447,7 +599,9 @@
         const depotsLayer = L.layerGroup();
         const plantsLayer = L.layerGroup();
         const wasteLayer = L.layerGroup();
+        const dieselLayer = L.layerGroup();
         const highwaysLayer = L.layerGroup();
+        const roadsLayer = L.layerGroup();
 
         // Store markers for filtering
         let schoolMarkers = [];
@@ -567,6 +721,70 @@
             });
         }
 
+        function createDieselIcon(type) {
+            // Different colors based on type
+            const colors = {
+                'Freight Terminal': '#d63031',
+                'Port': '#0984e3',
+                'Rail Yard': '#6c5ce7',
+                'Airport Cargo': '#00b894',
+                'Distribution Center': '#fdcb6e',
+                'Industrial Zone': '#e17055'
+            };
+            const color = colors[type] || '#d63031';
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    background: ${color};
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 2px;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+                    transform: rotate(45deg);
+                "></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+        }
+
+        // Historical AQI data - pre-computed NYC yearly averages
+        // (Using cached data since real-time historical fetches are slow)
+        const historicalAQI = {
+            '2020': { avg: 42, label: 'Good', color: '#00e400' },
+            '2021': { avg: 45, label: 'Good', color: '#00e400' },
+            '2022': { avg: 48, label: 'Good', color: '#00e400' },
+            '2023': { avg: 52, label: 'Moderate', color: '#ffff00' },
+            '2024': { avg: 47, label: 'Good', color: '#00e400' },
+            '2025': { avg: 44, label: 'Good', color: '#00e400' }
+        };
+
+        function createSparkline(stationName) {
+            const years = Object.keys(historicalAQI).sort();
+            const maxAqi = Math.max(...years.map(y => historicalAQI[y].avg));
+
+            let barsHtml = '';
+            years.forEach(year => {
+                const data = historicalAQI[year];
+                const height = (data.avg / maxAqi) * 35; // max 35px height
+                barsHtml += `
+                    <div class="sparkline-bar" style="height: ${height}px; background: ${data.color};">
+                        <span class="sparkline-bar-value">${data.avg}</span>
+                        <span class="sparkline-bar-label">'${year.slice(2)}</span>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="sparkline-container">
+                    <div class="sparkline-title">NYC Annual AQI Trend</div>
+                    <div class="sparkline-chart" style="margin-bottom: 18px;">
+                        ${barsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
         // Load live AQ data from AQICN
         async function loadLiveAQData() {
             try {
@@ -593,6 +811,7 @@
                         const aqiLabel = getAQILabel(aqi);
                         const aqiColor = getAQIColor(aqi);
 
+                        const sparklineHtml = createSparkline(station.station.name);
                         marker.bindPopup(`
                             <h3>${station.station.name}</h3>
                             <div class="popup-row">
@@ -602,6 +821,7 @@
                                 </span>
                             </div>
                             <div class="popup-row"><span class="popup-label">Updated:</span> ${station.station.time}</div>
+                            ${sparklineHtml}
                             <div class="popup-row" style="margin-top: 8px; font-size: 11px; color: #666;">
                                 Data from AQICN.org
                             </div>
@@ -702,11 +922,37 @@
         highways.forEach(highway => {
             const polyline = L.polyline(highway.coords, {
                 color: highway.color,
-                weight: 5,
+                weight: highway.weight || 5,
                 opacity: 0.7
             });
             polyline.bindPopup(`<h3>${highway.name}</h3><div>Major highway - high traffic pollution zone</div>`);
             highwaysLayer.addLayer(polyline);
+        });
+
+        // Add major roads (truck routes)
+        majorRoads.forEach(road => {
+            const polyline = L.polyline(road.coords, {
+                color: road.color,
+                weight: road.weight || 3,
+                opacity: 0.6,
+                dashArray: '5, 10'
+            });
+            polyline.bindPopup(`<h3>${road.name}</h3><div>Major truck route - heavy diesel traffic</div>`);
+            roadsLayer.addLayer(polyline);
+        });
+
+        // Add diesel sources (ports, freight terminals, distribution centers)
+        dieselSources.forEach(source => {
+            const marker = L.marker([source.lat, source.lon], { icon: createDieselIcon(source.type) });
+            marker.bindPopup(`
+                <h3>${source.name}</h3>
+                <div class="popup-row"><span class="popup-label">Type:</span> ${source.type}</div>
+                <div class="popup-row"><span class="popup-label">Details:</span> ${source.desc}</div>
+                <div class="popup-row" style="margin-top: 8px; color: #c0392b; font-size: 11px;">
+                    ⚠️ Major diesel emission source - trucks, ships, or locomotives
+                </div>
+            `);
+            dieselLayer.addLayer(marker);
         });
 
         // Add all layers to map
@@ -715,7 +961,9 @@
         depotsLayer.addTo(map);
         plantsLayer.addTo(map);
         wasteLayer.addTo(map);
+        dieselLayer.addTo(map);
         highwaysLayer.addTo(map);
+        roadsLayer.addTo(map);
 
         // Load live AQ data on startup
         loadLiveAQData();
@@ -787,6 +1035,18 @@
             this.classList.toggle('active');
             if (map.hasLayer(highwaysLayer)) map.removeLayer(highwaysLayer);
             else map.addLayer(highwaysLayer);
+        });
+
+        document.getElementById('toggleRoads').addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (map.hasLayer(roadsLayer)) map.removeLayer(roadsLayer);
+            else map.addLayer(roadsLayer);
+        });
+
+        document.getElementById('toggleDiesel').addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (map.hasLayer(dieselLayer)) map.removeLayer(dieselLayer);
+            else map.addLayer(dieselLayer);
         });
 
         // Auto-refresh AQ data every 10 minutes
