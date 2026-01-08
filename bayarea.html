@@ -387,6 +387,20 @@
             <div class="aq-legend-item"><div class="aq-legend-color" style="background: #cc0033;"></div>Hazardous (&gt;200)</div>
         </div>
 
+        <div style="margin-top: 15px;">
+            <button onclick="copyShareLink()" style="
+                width: 100%;
+                padding: 10px;
+                background: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: 600;
+            ">Copy Share Link</button>
+        </div>
+
         <div class="data-sources">
             <strong>Data Sources:</strong><br>
             Live AQ: AQICN.org<br>
@@ -742,6 +756,101 @@
         });
 
         setInterval(loadLiveAQData, 600000);
+
+        // === URL ROUTING ===
+        const markerRegistry = {};
+
+        function registerMarker(type, id, marker) {
+            markerRegistry[`${type}-${id}`] = marker;
+        }
+
+        function updateURL() {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            const params = new URLSearchParams();
+            params.set('lat', center.lat.toFixed(5));
+            params.set('lng', center.lng.toFixed(5));
+            params.set('z', zoom);
+
+            const currentHash = window.location.hash.slice(1);
+            const currentParams = new URLSearchParams(currentHash);
+            if (currentParams.has('type') && currentParams.has('id')) {
+                params.set('type', currentParams.get('type'));
+                params.set('id', currentParams.get('id'));
+            }
+
+            history.replaceState(null, '', '#' + params.toString());
+        }
+
+        let urlUpdateTimeout;
+        map.on('moveend', function() {
+            clearTimeout(urlUpdateTimeout);
+            urlUpdateTimeout = setTimeout(updateURL, 300);
+        });
+
+        function openMarkerByKey(type, id) {
+            const marker = markerRegistry[`${type}-${id}`];
+            if (marker) {
+                const latlng = marker.getLatLng();
+                map.setView(latlng, 15);
+                marker.openPopup();
+                return true;
+            }
+            return false;
+        }
+
+        function parseURL() {
+            const hash = window.location.hash.slice(1);
+            if (!hash) return;
+
+            const params = new URLSearchParams(hash);
+            const lat = parseFloat(params.get('lat'));
+            const lng = parseFloat(params.get('lng'));
+            const zoom = parseInt(params.get('z')) || 10;
+            const type = params.get('type');
+            const id = params.get('id');
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                map.setView([lat, lng], zoom);
+            }
+
+            if (type && id) {
+                setTimeout(() => openMarkerByKey(type, id), 1000);
+            }
+        }
+
+        function addMarkerURLHandler(marker, type, id) {
+            registerMarker(type, id, marker);
+            marker.on('click', function() {
+                const latlng = marker.getLatLng();
+                const params = new URLSearchParams();
+                params.set('lat', latlng.lat.toFixed(5));
+                params.set('lng', latlng.lng.toFixed(5));
+                params.set('z', map.getZoom());
+                params.set('type', type);
+                params.set('id', id);
+                history.pushState(null, '', '#' + params.toString());
+            });
+        }
+
+        // Register all markers
+        let idx = 0;
+        depotsLayer.eachLayer(m => addMarkerURLHandler(m, 'depot', idx++));
+        idx = 0;
+        plantsLayer.eachLayer(m => addMarkerURLHandler(m, 'plant', idx++));
+        idx = 0;
+        wasteLayer.eachLayer(m => addMarkerURLHandler(m, 'waste', idx++));
+        idx = 0;
+        dieselLayer.eachLayer(m => addMarkerURLHandler(m, 'diesel', idx++));
+
+        window.addEventListener('popstate', parseURL);
+        parseURL();
+
+        function copyShareLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
     </script>
 </body>
 </html>

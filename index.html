@@ -484,6 +484,20 @@
             <div class="aq-legend-item"><div class="aq-legend-color" style="background: #cc0033;"></div>Hazardous (&gt;200)</div>
         </div>
 
+        <div style="margin-top: 15px;">
+            <button onclick="copyShareLink()" style="
+                width: 100%;
+                padding: 10px;
+                background: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: 600;
+            ">Copy Share Link</button>
+        </div>
+
         <div class="data-sources">
             <strong>Data Sources:</strong><br>
             Live AQ: AQICN.org (World Air Quality Index)<br>
@@ -1058,6 +1072,138 @@
 
         // Auto-refresh AQ data every 10 minutes
         setInterval(loadLiveAQData, 600000);
+
+        // === URL ROUTING ===
+
+        // Store all markers by ID for routing
+        const markerRegistry = {};
+
+        // Register markers for URL routing
+        function registerMarker(type, id, marker) {
+            const key = `${type}-${id}`;
+            markerRegistry[key] = marker;
+        }
+
+        // Register school markers
+        schoolMarkers.forEach((marker, idx) => {
+            const school = marker.schoolData;
+            if (school && school.name) {
+                registerMarker('school', idx, marker);
+            }
+        });
+
+        // Update URL when map moves
+        function updateURL() {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            const params = new URLSearchParams();
+            params.set('lat', center.lat.toFixed(5));
+            params.set('lng', center.lng.toFixed(5));
+            params.set('z', zoom);
+
+            // Preserve marker selection if any
+            const currentHash = window.location.hash.slice(1);
+            const currentParams = new URLSearchParams(currentHash);
+            if (currentParams.has('type') && currentParams.has('id')) {
+                params.set('type', currentParams.get('type'));
+                params.set('id', currentParams.get('id'));
+            }
+
+            history.replaceState(null, '', '#' + params.toString());
+        }
+
+        // Debounce URL updates
+        let urlUpdateTimeout;
+        map.on('moveend', function() {
+            clearTimeout(urlUpdateTimeout);
+            urlUpdateTimeout = setTimeout(updateURL, 300);
+        });
+
+        // Open marker and update URL
+        function openMarkerByKey(type, id) {
+            const key = `${type}-${id}`;
+            const marker = markerRegistry[key];
+            if (marker) {
+                const latlng = marker.getLatLng();
+                map.setView(latlng, 15);
+                marker.openPopup();
+
+                const params = new URLSearchParams();
+                params.set('lat', latlng.lat.toFixed(5));
+                params.set('lng', latlng.lng.toFixed(5));
+                params.set('z', 15);
+                params.set('type', type);
+                params.set('id', id);
+                history.replaceState(null, '', '#' + params.toString());
+                return true;
+            }
+            return false;
+        }
+
+        // Parse URL on load
+        function parseURL() {
+            const hash = window.location.hash.slice(1);
+            if (!hash) return;
+
+            const params = new URLSearchParams(hash);
+            const lat = parseFloat(params.get('lat'));
+            const lng = parseFloat(params.get('lng'));
+            const zoom = parseInt(params.get('z')) || 11;
+            const type = params.get('type');
+            const id = params.get('id');
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                map.setView([lat, lng], zoom);
+            }
+
+            if (type && id) {
+                // Delay to ensure markers are loaded
+                setTimeout(() => openMarkerByKey(type, id), 1000);
+            }
+        }
+
+        // Add click handlers to update URL when markers are clicked
+        function addMarkerURLHandler(marker, type, id) {
+            registerMarker(type, id, marker);
+            marker.on('click', function() {
+                const latlng = marker.getLatLng();
+                const params = new URLSearchParams();
+                params.set('lat', latlng.lat.toFixed(5));
+                params.set('lng', latlng.lng.toFixed(5));
+                params.set('z', map.getZoom());
+                params.set('type', type);
+                params.set('id', id);
+                history.pushState(null, '', '#' + params.toString());
+            });
+        }
+
+        // Re-register depots, plants, waste, diesel with URL handlers
+        let depotIdx = 0;
+        depotsLayer.eachLayer(m => addMarkerURLHandler(m, 'depot', depotIdx++));
+        let plantIdx = 0;
+        plantsLayer.eachLayer(m => addMarkerURLHandler(m, 'plant', plantIdx++));
+        let wasteIdx = 0;
+        wasteLayer.eachLayer(m => addMarkerURLHandler(m, 'waste', wasteIdx++));
+        let dieselIdx = 0;
+        dieselLayer.eachLayer(m => addMarkerURLHandler(m, 'diesel', dieselIdx++));
+
+        // Register school markers with click handlers
+        schoolMarkers.forEach((marker, idx) => {
+            addMarkerURLHandler(marker, 'school', idx);
+        });
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', parseURL);
+
+        // Parse URL on initial load
+        parseURL();
+
+        // Add share button functionality
+        function copyShareLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
     </script>
 </body>
 </html>
