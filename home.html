@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Quality Maps</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .card h2 {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+        .card p {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        .card .arrow {
+            display: inline-block;
+            margin-top: 15px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .nyc { border-top: 4px solid #e74c3c; }
+        .boston { border-top: 4px solid #3498db; }
+        .bayarea { border-top: 4px solid #e67e22; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Air Quality Maps</h1>
+        <p class="subtitle">Interactive maps showing pollution sources and live air quality data</p>
+
+        <div class="cards">
+            <a href="index.html" class="card nyc">
+                <h2>New York City</h2>
+                <p>281 priority schools, bus depots, power plants, diesel hotspots, highways, and live AQI monitors.</p>
+                <span class="arrow">View Map &rarr;</span>
+            </a>
+
+            <a href="boston.html" class="card boston">
+                <h2>Greater Boston</h2>
+                <p>MBTA bus depots, power plants, Port of Boston, diesel sources, plus Match Charter Schools overlay.</p>
+                <span class="arrow">View Map &rarr;</span>
+            </a>
+
+            <a href="bayarea.html" class="card bayarea">
+                <h2>San Francisco Bay Area</h2>
+                <p>Port of Oakland, transit depots, power plants, and major truck routes across the region.</p>
+                <span class="arrow">View Map &rarr;</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
