@@ -250,63 +250,74 @@
             border-top: 1px solid #eee;
         }
 
-        .history-container {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 5px;
+        .history-box {
+            margin-top: 12px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
         }
 
-        .history-title {
-            font-size: 11px;
-            color: #555;
-            margin-bottom: 12px;
+        .history-box h4 {
+            font-size: 12px;
+            color: #333;
+            margin: 0 0 12px 0;
             font-weight: 600;
         }
 
-        .history-chart {
+        .history-bars {
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            height: 45px;
-            gap: 6px;
-            padding-top: 5px;
+            height: 50px;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 0 4px;
         }
 
-        .history-bar-group {
+        .history-col {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            flex: 1;
         }
 
         .history-bar {
             width: 100%;
-            border-radius: 2px 2px 0 0;
-            min-height: 4px;
+            max-width: 28px;
+            border-radius: 3px 3px 0 0;
         }
 
-        .history-values {
+        .history-labels {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 0 4px;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+        }
+
+        .history-label {
+            flex: 1;
             text-align: center;
-            margin-top: 6px;
         }
 
-        .history-avg {
+        .history-label .year {
             font-size: 11px;
-            font-weight: bold;
+            font-weight: 600;
             color: #333;
         }
 
-        .history-max {
-            font-size: 9px;
-            color: #666;
-            font-weight: 500;
+        .history-label .avg {
+            font-size: 13px;
+            font-weight: 700;
+            color: #222;
+            margin: 2px 0;
         }
 
-        .history-year {
-            font-size: 9px;
-            color: #666;
-            margin-top: 2px;
+        .history-label .max {
+            font-size: 10px;
+            color: #888;
         }
     </style>
 </head>
@@ -627,29 +638,22 @@
             const maxAvg = Math.max(...years.map(y => historicalAQI[y].avg));
 
             let barsHtml = '';
+            let labelsHtml = '';
+
             years.forEach(year => {
                 const data = historicalAQI[year];
-                const height = (data.avg / maxAvg) * 35;
+                const height = (data.avg / maxAvg) * 45;
                 const color = getAQIColor(data.avg);
 
-                barsHtml += `
-                    <div class="history-bar-group">
-                        <div class="history-bar" style="height: ${height}px; background: ${color};"></div>
-                        <div class="history-values">
-                            <div class="history-avg">${data.avg}</div>
-                            <div class="history-max">max ${data.max}</div>
-                        </div>
-                        <div class="history-year">'${year.slice(2)}</div>
-                    </div>
-                `;
+                barsHtml += `<div class="history-col"><div class="history-bar" style="height: ${height}px; background: ${color};"></div></div>`;
+                labelsHtml += `<div class="history-label"><div class="year">'${year.slice(2)}</div><div class="avg">${data.avg}</div><div class="max">max ${data.max}</div></div>`;
             });
 
             return `
-                <div class="history-container">
-                    <div class="history-title">Annual AQI Average & Max</div>
-                    <div class="history-chart">
-                        ${barsHtml}
-                    </div>
+                <div class="history-box">
+                    <h4>Annual AQI History</h4>
+                    <div class="history-bars">${barsHtml}</div>
+                    <div class="history-labels">${labelsHtml}</div>
                 </div>
             `;
         }
